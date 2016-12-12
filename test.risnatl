@@ -1,0 +1,74 @@
+/* Define a data template named alpha that binds to an element matching the selector #root by default.
+   Additionally, the data passed in to the mapping is bound to the name obj. Thus, a mapping is a bit like
+   a function which recieves an input and operates on a specific context */
+mapping alpha(obj) #root {
+
+  /* Bind the id attribute of the element to the value associated with the key "uid" in the JSON object.
+     This replaces the id value of "root" in the output HTML */
+  attr id: obj.uid;
+
+  /* Bind the class attribute with a constant value. The name component of an attribute assignment does not
+     need to be wrapped in quotes or double-quotes unless usage of the colon is required.
+     See https://html.spec.whatwg.org/multipage/syntax.html#attributes-2 for details on valid attribute name characters */
+  attr 'class': "a string";
+
+  /* Binding a null to an attribute erases it from the DOM. Binding an empty string */
+  attr delete-me: null;
+
+  /* Binding an empty string to an attribute sets it with no value */
+  attr set-me: "";
+
+  /* & selector is stolen from SASS and used here to demonstrate the ordering of binding in a ruleset
+     has relevance. The following rule triggers because the previous rule created the set-me attribute */
+  query &[set-me] {
+    /* @ is usable as a short-hand replacement for attr */
+    @data-maybe: true;
+  }
+
+  /* CSS selectors are constrained to the characters defined as per https://www.w3.org/TR/CSS21/grammar.html#scanner */
+  query > span {
+
+    /* Wild-card attribute binding understands that the value associated with key "someAttributes" in JSON is an object.
+       The contents of the object will be bound as attributes on the selected element (#root > span) */
+    attr *: obj.someAttributes;
+
+    /* Prefix/suffix wildcard attribute binding. JSON keys that match that pattern on the RHS will be bound as
+       attributes on the selected element. Attribute names will be generated using the section matched by the
+       wildcard on the RHS */
+    attr *: obj.moreAttributes.prefix-*;
+
+    query h1 {
+      /* Bind the inner content of the h1 element to the value associated with the key "title" in the JSON object.
+         In text mode, content is escaped to prevent HTML within the value from being processed */
+      text: obj.title;
+
+      /* In order for the data- prefix to be maintained for attribute names we need to include it on the LHS */
+      attr data-*: obj.data-*;
+
+      /* Mixing it up is also allowed :-) */
+      attr *-data: obj.data-*;
+    }
+
+    /* Select the second (and last) option element and apply the data template beta to it with the value associated with the
+       key "options" in the JSON object. This value is a list and as a result the template will actually be applied for
+       each item in the list. */
+    query option:last-child {
+      /* Replace allows you to replace the current selection with a raw value or the result of calling another mapping.
+         When calling another mapping, the current selection is passed in as the base context while the data is explicitly
+         specified. In the case of a raw value, DOM Elements are coerced. */
+      replace: beta(obj.options);
+    }
+
+    query input {
+      /* `replace` with the raw value `null` removes the selection from the DOM */
+      replace: null;
+    }
+  }
+}
+
+/* Define an unbouned mapping named beta. This mapping has to be applied manually */
+mapping beta(option) {
+  attr value: option.value;
+  // Similar to `text` except HTML in the value is not escaped.
+  html: option.text;
+}
